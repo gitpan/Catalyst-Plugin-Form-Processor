@@ -1,5 +1,10 @@
 Revision history for Perl extension Catalyst::Plugin::Form::Processor.
 
+0.02 Sun Jun 17 03:59:02 UTC 2007
+    Add Unicode::Encoding to list of plugins for example application
+
+    Move to Module::Install
+
 0.01  Mon Jun 11 22:07:49 2007
 	- original version; created by h2xs 1.23 with options
 		-AX -n Catalyst::Plugin::Form::Processor

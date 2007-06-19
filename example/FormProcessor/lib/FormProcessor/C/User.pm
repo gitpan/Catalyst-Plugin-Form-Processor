@@ -83,7 +83,7 @@ sub form : Private {
 
     for my $field ( $form->fields ) {
         warn sprintf( "Field [%s] input data [%s] with output data [%s]\n",
-            $field->name, $field->input, $field->value )
+            $field->name, $field->input || 'unknown', $field->value )
             if $field->value;
     }
 

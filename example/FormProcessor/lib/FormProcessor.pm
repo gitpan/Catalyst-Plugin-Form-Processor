@@ -8,9 +8,10 @@ use Catalyst qw/
     Static::Simple
     Form::Processor
     I18N
+    Unicode::Encoding
 /;
 
-our $VERSION = '0.01';
+our $VERSION='0.01';
 
 # Configure the application. 
 #

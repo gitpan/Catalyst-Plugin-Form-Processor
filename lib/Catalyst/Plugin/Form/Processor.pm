@@ -7,7 +7,7 @@ use NEXT;
 use HTML::FillInForm;
 use Module::Find;
 
-our $VERSION = 0.01;
+our $VERSION = '0.02';
 
 =head1 NAME
 
@@ -105,7 +105,7 @@ App::Form name space.
 
 But, it might be worth loading the modules at compile time if you
 have a lot of modules to save on memory (e.g. under mod_perl).
-See L<pre_load_forms> below.
+See L</pre_load_forms> below.
 
 
 Pass:
@@ -372,15 +372,14 @@ Bill Moseley
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2007 Bill Moseley, all rights reserved.
-
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =head1 See also
 
-    L<Form::Processor>
-    L<Form::Processor::Model::CDBI>
+L<Form::Processor>
+
+L<Form::Processor::Model::CDBI>
 
 =cut
 

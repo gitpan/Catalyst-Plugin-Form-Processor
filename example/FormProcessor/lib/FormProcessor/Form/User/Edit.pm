@@ -7,7 +7,10 @@ sub profile {
     return {
         required => {
             first_name  => 'Text',
-            last_name   => 'Text',
+            last_name   => {
+                type    => 'Text',
+                size    => 5,
+            },
             username    => 'Username',
             email       => 'Email',
             color       => 'Select',

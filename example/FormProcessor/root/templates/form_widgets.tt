@@ -549,6 +549,7 @@
 
         '<input';
         field_attributes( input_field_type );
+        " size='$field.size' " IF field.size;
         '/>';
 
     END;
