@@ -15,6 +15,7 @@ requires        'UNIVERSAL::require' => 0;
 recommends      'Catalyst::Plugin::I18N'                => '0.05';
 recommends      'Catalyst::Plugin::Unicode::Encoding'   => '0.1';
 recommends      'Catalyst::Plugin::Static::Simple'      => '0.14';
+recommends      'Template'                              => '2.19';
 
 build_requires  'Test::More'        => '0.42';
 

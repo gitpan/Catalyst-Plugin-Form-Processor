@@ -2,7 +2,10 @@ This is a Catalyst demo using Form::Processor.
 
     Requires:
         Catalyst::Runtime
-        Template::Toolkit
+        Template (Template Toolkit) version 2.19
+
+    Run perl Makefile.PL in the example/FormProcessor dir
+    to test.
 
     Not all fields are displayed because not all modules
     used by every field in Form::Processor is required.

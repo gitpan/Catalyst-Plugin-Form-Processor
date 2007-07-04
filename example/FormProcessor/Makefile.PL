@@ -8,6 +8,7 @@ requires 'Catalyst::Plugin::Static::Simple';
 requires 'Catalyst::Plugin::Form::Processor';
 requires 'Catalyst::Plugin::I18N';
 requires 'Catalyst::Plugin::Unicode::Encoding';
+requires 'Template' => '2.19';
 
 catalyst;
 

@@ -406,7 +406,8 @@
 
         IF widget == 'select';
             form_field_label( field ) IF label;
-            html_element_select( field,  ! field.multiple );
+            show_heading = add_heading.defined ? add_heading : ! field.multiple;
+            html_element_select( field,  show_heading );
 
 
         ELSE;
@@ -523,16 +524,23 @@
     MACRO field_attributes( field_type, id_suffix, name_suffix ) BLOCK;
 
         SET field_id = field.id | uri | html;
-        SET field_id = field_id _ id_suffix IF id_suffix;
+        SET field_id = field_id _ id_suffix IF id_suffix.defined;
 
         SET field_name = field.full_name | uri | html;
-        SET field_name = field_name _ name_suffix IF name_suffix;
+        SET field_name = field_name _ name_suffix IF name_suffix.defined;
 
 
         " id='$field_id' name='$field_name'";
         " type='$field_type'"  IF field_type;
         ' readonly="readonly"' IF field.readonly;
         ' disabled="disabled"' IF field.disabled;
+
+        attribute_classes = [ field.type ];
+        attribute_classes.push( 'required' ) IF field.required;
+        attribute_classes.push( 'error' ) IF field.has_error;
+
+        ' class="'; attribute_classes.join(' ' ); '"';
+
     END;
 
 
@@ -550,6 +558,8 @@
         '<input';
         field_attributes( input_field_type );
         " size='$field.size' " IF field.size;
+        # HTML::Fillinform will use "on" for the value, so force to 1
+        ' value="1"' IF input_field_type == 'checkbox';
         '/>';
 
     END;
@@ -755,12 +765,14 @@
 
     MACRO form_field_label( field, field_label, id_suffix ) BLOCK;
 
+
         SET field = form.field( field ) UNLESS field.name;
 
 
         # Only set the order if id_suffix is not passed in.  id_suffix is used for labling radio/check groups.
         UNLESS id_suffix.defined;
             CALL field.set_order;  # Set the order of the field on the page.
+
 
             # This is for when calling this macro directly instead of via form() macro.
             CALL field.label( field_label ) IF field_label;

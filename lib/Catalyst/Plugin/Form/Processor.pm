@@ -7,7 +7,7 @@ use NEXT;
 use HTML::FillInForm;
 use Module::Find;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 NAME
 
@@ -89,7 +89,7 @@ The application can be found in the t/example directory of the distribution.
 
 =head1 METHODS
 
-=head2 form ( $args_ref, $form_name );
+=head2 form ( $item_or_args_ref, $form_name );
 
     $form = $c->form;
     $form = $c->form( $user_id );
@@ -107,10 +107,24 @@ But, it might be worth loading the modules at compile time if you
 have a lot of modules to save on memory (e.g. under mod_perl).
 See L</pre_load_forms> below.
 
+The Catalyst context (C<$c>) is made available to the form
+via the form's user data.  In the form you may do:
+
+    my $c = $form->user_data->{context};
+
 
 Pass:
-    $args_ref is an optional hash reference of arguments
-    passed to the form's new method.
+    $item_or_args_ref. This can be
+        scalar:
+            it will be assumed to be the id of the row to edit
+        hash ref:
+            assumed to be a list of options and will be passed
+            as a list to Form::Processor->new.
+        an object:
+            and will be set as the item and item_id is set by
+            calling the "id" method on this object.  If id
+            is not the correct method then pass a hash reference
+            instead.
 
     If $form_name is not provided then will use the current controller
     class and the action for the form name.  If $form_name is defined then
@@ -141,6 +155,8 @@ Returns:
 sub form {
     my ( $c, $args_ref, $form_name ) = @_;
 
+
+    # Determine the form package name
     my $package;
     if ( defined $form_name ) {
 
@@ -162,12 +178,26 @@ sub form {
     # Single argument to Form::Processor->new means it's an item id or object.
     # Hash references must be turned into lists.
 
-    my @args = !ref $args_ref || Scalar::Util::blessed( $args_ref )
-        ? $args_ref
-        : %{$args_ref};
+    my %args;
+    if ( defined $args_ref ) {
+        if ( ref $args_ref eq 'HASH' ) {
+            %args = %{ $args_ref };
+        }
+        elsif ( Scalar::Util::blessed( $args_ref ) ) {
+            %args = (
+                item    => $args_ref,
+                item_id => $args_ref->id,
+            );
+        }
+        else {
+            %args = ( item_id => $args_ref );
+        }
+    }
+
+    $args{user_data}{context} = $c;
 
 
-    return $c->stash->{form} = $package->new( @args );
+    return $c->stash->{form} = $package->new( %args );
 
 } ## end sub form
 

@@ -1,11 +1,21 @@
 Revision history for Perl extension Catalyst::Plugin::Form::Processor.
 
+0.03 Wed Jul  4 14:34:26 UTC 2007
+    Now always pass in the context in the user_data hash:
+        my $c = $form->user_data->{context};
+
+    Add dependency on Template 2.19 for the demo application,
+    and a template fix for testing .defined on id_suffix.
+
+    Force checkbox to value="1" -- HTML::FillInForm uses "on".
+
+
 0.02 Sun Jun 17 03:59:02 UTC 2007
     Add Unicode::Encoding to list of plugins for example application
 
     Move to Module::Install
 
 0.01  Mon Jun 11 22:07:49 2007
-	- original version; created by h2xs 1.23 with options
-		-AX -n Catalyst::Plugin::Form::Processor
+        - original version; created by h2xs 1.23 with options
+                -AX -n Catalyst::Plugin::Form::Processor
 

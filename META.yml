@@ -19,10 +19,11 @@ recommends:
   Catalyst::Plugin::I18N: 0.05
   Catalyst::Plugin::Static::Simple: 0.14
   Catalyst::Plugin::Unicode::Encoding: 0.1
+  Template: 2.19
 requires: 
   Catalyst: 5.50
   Form::Processor: 0.11
   HTML::FillInForm: 0
   UNIVERSAL::require: 0
   perl: 5.8.1
-version: 0.02
+version: 0.03
