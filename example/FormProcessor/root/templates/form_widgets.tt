@@ -783,7 +783,7 @@
 
         '<label for="';
         field.id | uri | html;
-        id_suffix | url | html;
+        id_suffix | uri | html;
 
         '" class="break' IF break_label;
 

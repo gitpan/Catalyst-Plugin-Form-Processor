@@ -1,5 +1,17 @@
 Revision history for Perl extension Catalyst::Plugin::Form::Processor.
 
+
+
+0.05 Sat Dec  1 21:40:26 UTC 2007
+    Display warning message when loading form module fails.
+
+    Add feature to do general FillInForm
+        $c->stash->{fillinform} = $c->req->parameters;
+
+0.04 Wed Jul 25 06:54:47 UTC 2007
+    Fix call to wrong Template Toolkit filter in example
+    application.  Closes #28465.
+
 0.03 Wed Jul  4 14:34:26 UTC 2007
     Now always pass in the context in the user_data hash:
         my $c = $form->user_data->{context};

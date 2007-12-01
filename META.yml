@@ -1,10 +1,11 @@
 --- 
-abstract: methods for processing forms with Form::Processor
-author: Bill Moseley
+abstract: Use Form::Processor with Catalyst
+author: 
+  - Bill Moseley
 build_requires: 
   Test::More: 0.42
 distribution_type: module
-generated_by: Module::Install version 0.67
+generated_by: Module::Install version 0.68
 license: perl
 meta-spec: 
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
@@ -26,4 +27,4 @@ requires:
   HTML::FillInForm: 0
   UNIVERSAL::require: 0
   perl: 5.8.1
-version: 0.03
+version: 0.05
