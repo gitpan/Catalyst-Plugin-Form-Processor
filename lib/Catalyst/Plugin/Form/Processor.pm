@@ -6,8 +6,10 @@ use UNIVERSAL::require;
 use NEXT;
 use HTML::FillInForm;
 use Module::Find;
+use Scalar::Util;
 
-our $VERSION = '0.05';
+
+our $VERSION = '0.06';
 
 =head1 NAME
 
@@ -38,7 +40,7 @@ Then in a controller:
         my ( $self, $c, $user_id ) = @_;
 
         # Validate and insert/update database
-        reutrn unless $c->update_from_form( $user_id );
+        return unless $c->update_from_form( $user_id );
 
         # Form validated.
 
@@ -50,7 +52,7 @@ Then in a controller:
         my ( $self, $c ) = @_;
 
         # Redisplay form
-        reutrn unless $c->validate_form;
+        return unless $c->validate_form;
 
         # Form validated.
 
@@ -229,6 +231,10 @@ sub form {
 
     $args{user_data}{context} = $c;
 
+    # Since $c holds a reference to the form and the form holds
+    # a reference to the context must weaken.
+    Scalar::Util::weaken( $args{user_data}{context} );
+
 
     return $c->stash->{form} = $package->new( %args );
 
@@ -329,16 +335,20 @@ sub dispatch {
 
     my $ret = $c->NEXT::dispatch( @_ );
 
+    my $form = $c->stash->{form};
 
+    # Any form data?
+    return $ret unless $form;
+
+    # Disabled in configuration
     return $ret if $c->config->{form}{no_fillin};
 
-    my $params = $c->stash->{form}
-        ? $c->stash->{form}->fif
-        : '';
 
-    return $ret unless
-        $c->res->status == 200
-        && $params && %{$params};
+    return $ret if $c->res->status != 200;
+
+    my $params = $form->fif;
+
+    return $ret unless ref $params && %{$params};
 
     # Run FillInForm
     $c->response->output(

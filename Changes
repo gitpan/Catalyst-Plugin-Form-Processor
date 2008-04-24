@@ -1,6 +1,8 @@
 Revision history for Perl extension Catalyst::Plugin::Form::Processor.
 
-
+0.06 Thu Apr 24 02:30:38 UTC 2008
+    Weaken the user_data reference to the Catalyst context
+    to break a circular reference that resulted in a leak.
 
 0.05 Sat Dec  1 21:40:26 UTC 2007
     Display warning message when loading form module fails.

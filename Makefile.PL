@@ -11,6 +11,7 @@ requires        'Form::Processor'    => '0.11';
 requires        'HTML::FillInForm'   => 0;
 requires        'Catalyst'           => '5.50';
 requires        'UNIVERSAL::require' => 0;
+requires        'Scalar::Util'       => 0;
 
 recommends      'Catalyst::Plugin::I18N'                => '0.05';
 recommends      'Catalyst::Plugin::Unicode::Encoding'   => '0.1';
