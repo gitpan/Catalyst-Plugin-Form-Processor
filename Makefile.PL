@@ -1,27 +1,59 @@
-# Load the Module::Install bundled in ./inc/
-use inc::Module::Install;
 
-perl_version '5.8.1';
-
-
-name            'Catalyst-Plugin-Form-Processor';
-all_from        'lib/Catalyst/Plugin/Form/Processor.pm';
-
-requires        'Form::Processor'    => '0.11';
-requires        'HTML::FillInForm'   => 0;
-requires        'Catalyst'           => '5.50';
-requires        'UNIVERSAL::require' => 0;
-requires        'Scalar::Util'       => 0;
-
-recommends      'Catalyst::Plugin::I18N'                => '0.05';
-recommends      'Catalyst::Plugin::Unicode::Encoding'   => '0.1';
-recommends      'Catalyst::Plugin::Static::Simple'      => '0.14';
-recommends      'Template'                              => '2.19';
-
-build_requires  'Test::More'        => '0.42';
+use strict;
+use warnings;
 
 
-no_index        'directory'         => 'example';
 
-auto_install;
-WriteAll;
+use ExtUtils::MakeMaker 6.30;
+
+
+
+my %WriteMakefileArgs = (
+  "ABSTRACT" => "Use Form::Processor with Catalyst",
+  "AUTHOR" => "Bill Moseley <mods\@hank.org>",
+  "BUILD_REQUIRES" => {
+    "Test::More" => 0,
+    "strict" => 0,
+    "warnings" => 0
+  },
+  "CONFIGURE_REQUIRES" => {
+    "ExtUtils::MakeMaker" => "6.30"
+  },
+  "DISTNAME" => "Catalyst-Plugin-Form-Processor",
+  "EXE_FILES" => [],
+  "LICENSE" => "perl",
+  "NAME" => "Catalyst::Plugin::Form::Processor",
+  "PREREQ_PM" => {
+    "Class::MOP" => 0,
+    "HTML::FillInForm" => 0,
+    "Module::Find" => 0,
+    "Moose::Role" => 0,
+    "Scalar::Util" => 0
+  },
+  "VERSION" => "1.130550",
+  "test" => {
+    "TESTS" => "t/*.t"
+  }
+);
+
+
+unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {
+  my $br = delete $WriteMakefileArgs{BUILD_REQUIRES};
+  my $pp = $WriteMakefileArgs{PREREQ_PM};
+  for my $mod ( keys %$br ) {
+    if ( exists $pp->{$mod} ) {
+      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod};
+    }
+    else {
+      $pp->{$mod} = $br->{$mod};
+    }
+  }
+}
+
+delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
+  unless eval { ExtUtils::MakeMaker->VERSION(6.52) };
+
+WriteMakefile(%WriteMakefileArgs);
+
+
+

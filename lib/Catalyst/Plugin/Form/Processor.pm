@@ -1,31 +1,226 @@
 package Catalyst::Plugin::Form::Processor;
-use strict;
-use warnings;
-use Carp;
-use UNIVERSAL::require;
-use NEXT;
+{
+  $Catalyst::Plugin::Form::Processor::VERSION = '1.130550';
+}
+use Moose::Role;
+use Class::MOP;
 use HTML::FillInForm;
 use Module::Find;
 use Scalar::Util;
 
 
-our $VERSION = '0.06';
+
+
+# ABSTRACT: Use Form::Processor with Catalyst
+
+
+sub form {
+    my ( $c, $args_ref, $form_name ) = @_;
+
+
+    # Determine the form package name
+    my $package;
+    if ( defined $form_name ) {
+
+        $package
+            = $form_name =~ s/^\+//
+            ? $form_name
+            : ref( $c ) . '::Form::' . $form_name;
+    }
+    else {
+        $package = $c->action->class;
+        $package =~ s/::C(?:ontroller)?::/::Form::/;
+        $package .= '::' . ucfirst( $c->action->name );
+    }
+
+    Class::MOP::load_class( $package );
+
+
+    # Single argument to Form::Processor->new means it's an item id or object.
+    # Hash references must be turned into lists.
+
+    my %args;
+    if ( defined $args_ref ) {
+        if ( ref $args_ref eq 'HASH' ) {
+            %args = %{$args_ref};
+        }
+        elsif ( Scalar::Util::blessed( $args_ref ) ) {
+            %args = (
+                item    => $args_ref,
+                item_id => $args_ref->id,
+            );
+        }
+        else {
+            %args = ( item_id => $args_ref );
+        }
+    }
+
+    # Set schema name -- mostly for DBIC
+
+    if ( $package->can( 'schema' ) ) {
+        unless ( exists $args{schema} ) {
+            my $schema_name = $c->config->{form}{model_name}
+                || $c->stash->{model_name};
+
+
+            $args{schema} = $c->model( $schema_name )->schema
+                if defined $schema_name;
+        }
+    }
+
+    $args{user_data}{context} = $c;
+
+    # Since $c holds a reference to the form and the form holds
+    # a reference to the context must weaken.
+    Scalar::Util::weaken( $args{user_data}{context} );
+
+
+    return $c->stash->{form} = $package->new( %args );
+
+} ## end sub form
+
+
+
+sub validate_form {
+    my ( $c, @rest ) = @_;
+
+    my $form = $c->form( @rest );
+
+    return
+        $c->form_posted
+        && $form->validate( $c->req->parameters );
+
+}
+
+
+
+
+sub update_from_form {
+    my ( $c, @rest ) = @_;
+
+    my $form = $c->form( @rest ) || return;
+
+    return
+        $c->form_posted
+        && $form->update_from_form( $c->req->parameters );
+
+}
+
+
+sub form_posted {
+    my $c = shift;
+
+    return $c->req->method eq 'POST' || $c->req->method eq 'PUT';
+}
+
+
+# Used to override finalize, but that's not called in a redirect.
+# TODO: add support for multiple forms on a page (and multiple forms
+# in the stash).
+#
+# And better, simply remove this.
+
+before 'finalize' => sub {
+    my $c = shift;
+
+
+    my $form = $c->stash->{form} || return;
+
+
+    # Disabled in configuration
+    return if $c->config->{form}{no_fillin};
+
+
+    return if $c->res->status != 200;
+
+    my $params = $form->fif;
+
+    return unless ref $params && %{$params};
+
+    return unless defined $c->response->{body};
+
+    $c->log->debug( 'Filling in form with HTML::FillInForm' ) if $c->debug;
+
+
+    # Run FillInForm
+    $c->response->output(
+        HTML::FillInForm->new->fill(
+            scalarref => \$c->response->{body},
+            fdat      => $params,
+        ) );
+
+    return;
+
+};
+
+
+after 'setup_finalize' => sub {
+    my $c = shift;
+
+    my $config = $c->config->{form} || {};
+
+    return unless $config->{pre_load_forms};
+
+    my $debug = $config->{debug};
+
+    my $name_space = $c->config->{form_name_space} || $c->config->{name} . '::Form';
+    my @namespace = ref $name_space eq 'ARRAY' ? @{$name_space} : ( $name_space );
+
+
+    for my $ns ( @namespace ) {
+        warn "Searching for forms in the [$ns] namespace\n" if $debug;
+
+        for my $form ( Module::Find::findallmod( $ns ) ) {
+
+            warn "Loading form module [$form]\n" if $debug;
+
+            Class::MOP::load_class( $form );
+
+            eval { $form->load_form }
+                || die "Failed load_module for form module [$form]: $@" if $@;
+        }
+    }
+
+    return;
+};
+
+
+
+
+no Moose::Role;
+
+1;
+
+
+
+
+
+
+__END__
+=pod
 
 =head1 NAME
 
 Catalyst::Plugin::Form::Processor - Use Form::Processor with Catalyst
 
+=head1 VERSION
+
+version 1.130550
+
 =head1 SYNOPSIS
 
 In the Catalyst application base class:
 
-    use Catalyst qw/ Form::Processor /;
+    use Catalyst;
+
+    with 'Catalyst::Plugin::Form::Processor';
 
     __PACKAGE__->config->{form} = {
         no_fillin       => 1,  # Don't auto-fill forms with HTML::FillInForm
         pre_load_forms  => 1,  # Try and load forms at setup time
         form_name_space => 'My::Forms',
         debug           => 1,   # Show forms pre-loaded.
+        schema_class    => 'MyApp::DB',
     };
 
 Then in a controller:
@@ -63,25 +258,14 @@ Then in a controller:
     # Use HTML::FillInForm to populate a form:
     $c->stash->{fillinform} = $c->req->parameters;
 
-
-
 =head1 DESCRIPTION
 
-If not obvious from the L<SYNOPSIS> above, this plugin adds methods to make
-L<Form::Processor> easy to use with Catalyst.  The plugin uses the current
-action name to find the form module, creates the form object and stuffs it into
-the stash, and passes the Catalyst request parameters to the form for
-validation.  What else could you want?
+"This distribution should not exist" - https://rt.cpan.org/Ticket/Display.html?id=40733
 
-Perhaps you want automatic HTML form generation?  No, this module
-does not do that.  When was the last time you wrote a web application
-where automatically generated forms would be close to acceptable?  Forms
-always need customization and error message formatting, custom javascript,
-etc.
-
-That said, check out the included example Catalyst application to see how easy
-it is to place fields and error messages on a page.  Adding new forms often is
-as simple a listing the fields to include on the page.
+This plugin adds methods to make L<Form::Processor> easy to use with Catalyst.
+The plugin uses the current action name to find the form module, creates the
+form object and stuffs it into the stash, and passes the Catalyst request
+parameters to the form for validation.
 
 The method C<< $c->update_from_form >> is used when the form inherits from a
 Form::Processor model class (e.g. L<Form::Processor::Model::CDBI>) which will
@@ -92,16 +276,12 @@ C<< $c->validate_form >> simply validates the form and you must then decide
 what to do with the validated data.  This is useful when the posted data
 will be used for something other than updating a row in a database.
 
-The C<< $c->form >> method will automatically load a form module from disk.
+The C<< $c->form >> method will create an instance of your form class.
 Both C<< $c->update_from_form >> and C<< $c->validate_form >> call this method
 to load the form for you.  So, you generally don't need to call this directly.
 
 Forms are assumed to be in the $App::Form name space.  But, that's just
-the default.  In case you are unfamiliar with L<Form::Processor>, forms
-are Perl modules that define not only the fields associated with a form but
-also any extra validation (and cross validation) you may need to process
-a form.
-
+the default.  This can be overridden with the C<form_name_space> option.
 
 The form object is stored in the stash as C<< $c->stash->{form} >>.  Templates
 can use this to access for form.
@@ -114,12 +294,6 @@ but can be overridden by populating the stash with a hash reference:
 
 Note that this can also be used to populate forms not managed by Form::Processor.
 Currently, only one form per page is supported.
-
-L<Form::Processor> (currently) does not generate HTML.  This distribution
-contains a sample Catalyst application that includes an overly complex Template
-Toolkit file (C<form_widgets.tt>) for generating HTML.  The application can be
-found in the t/example directory of the distribution.
-
 
 =head1 METHODS
 
@@ -146,7 +320,6 @@ The Catalyst context (C<$c>) is made available to the form
 via the form's user data attribute.  In the form you may do:
 
     my $c = $form->user_data->{context};
-
 
 Pass:
     $item_or_args_ref. This can be
@@ -180,66 +353,9 @@ Pass:
         # External form Other::Form->new
         my $form = $c->form( $args_ref, '+Other::Form' );
 
-
 Returns:
     Sets $c->{form} by calling new on the form object.
     That value is also returned.
-
-=cut
-
-sub form {
-    my ( $c, $args_ref, $form_name ) = @_;
-
-
-    # Determine the form package name
-    my $package;
-    if ( defined $form_name ) {
-
-        $package
-            = $form_name =~ s/^\+//
-            ? $form_name
-            : ref( $c ) . '::Form::' . $form_name;
-    }
-    else {
-        $package = $c->action->class;
-        $package =~ s/::C(?:ontroller)?::/::Form::/;
-        $package .= '::' . ucfirst( $c->action->name );
-    }
-
-    $package->require
-        or carp "Failed to load Form module $package";
-
-
-    # Single argument to Form::Processor->new means it's an item id or object.
-    # Hash references must be turned into lists.
-
-    my %args;
-    if ( defined $args_ref ) {
-        if ( ref $args_ref eq 'HASH' ) {
-            %args = %{ $args_ref };
-        }
-        elsif ( Scalar::Util::blessed( $args_ref ) ) {
-            %args = (
-                item    => $args_ref,
-                item_id => $args_ref->id,
-            );
-        }
-        else {
-            %args = ( item_id => $args_ref );
-        }
-    }
-
-    $args{user_data}{context} = $c;
-
-    # Since $c holds a reference to the form and the form holds
-    # a reference to the context must weaken.
-    Scalar::Util::weaken( $args{user_data}{context} );
-
-
-    return $c->stash->{form} = $package->new( %args );
-
-} ## end sub form
-
 
 =head2 validate_form
 
@@ -252,21 +368,6 @@ if all fields validate.
 This is the method to use if you are not using
 a Form::Processor::Model class to automatically
 update or insert a row into the database.
-
-=cut
-
-sub validate_form {
-    my $c = shift;
-
-    my $form = $c->form( @_ );
-
-    return
-        $c->form_posted
-        && $form->validate( $c->req->parameters );
-
-}
-
-
 
 =head2 update_from_form
 
@@ -286,19 +387,6 @@ For this to work your form should inherit from a Form::Processor::Model
 class (e.g. see L<Form::Processor::Model::CDBI>), or your form must
 have an C<update_from_form()> method (which calls validate).
 
-=cut
-
-sub update_from_form {
-    my $c = shift;
-
-    my $form = $c->form( @_ );
-
-    return
-        $c->form_posted
-        && $form->update_from_form( $c->req->parameters );
-
-}
-
 =head2 form_posted
 
 This returns true if the request was a post request.
@@ -306,61 +394,12 @@ This could be replace with a method that does more extensive
 checking, such as validating a form token to prevent double-posting
 of forms.
 
-=cut
-
-sub form_posted {
-    my $c = shift;
-
-    return $c->req->method eq 'POST';
-}
-
-=head1 EXTENDED METHODS
-
-=head2 dispatch
+=head2 finalize
 
 Automatically fills in a form if $form variable is found.
 This can be disabled by setting
 
     $c->config->{form}{no_fillin};
-
-
-=cut
-
-# Used to override finalize, but that's not called in a redirect.
-# TODO: add support for multiple forms on a page (and multiple forms
-# in the stash).
-
-sub dispatch {
-    my $c = shift;
-
-    my $ret = $c->NEXT::dispatch( @_ );
-
-    my $form = $c->stash->{form};
-
-    # Any form data?
-    return $ret unless $form;
-
-    # Disabled in configuration
-    return $ret if $c->config->{form}{no_fillin};
-
-
-    return $ret if $c->res->status != 200;
-
-    my $params = $form->fif;
-
-    return $ret unless ref $params && %{$params};
-
-    # Run FillInForm
-    $c->response->output(
-        HTML::FillInForm->new->fill(
-            scalarref => \$c->response->{body},
-            fdat      => $params,
-        ) );
-
-
-    return $ret;
-
-}
 
 =head2 setup
 
@@ -369,42 +408,9 @@ the name space provided by the C<form_name_space> configuration list or by
 default the application name space with the suffix ::Form appended (e.g.
 MyApp::Form).
 
-=cut
+=head1 EXTENDED METHODS
 
-sub setup {
-    my $c = shift;
-    $c->NEXT::setup( @_ );
-
-    my $config = $c->config->{form} || {};
-
-    return unless $config->{pre_load_forms};
-
-    my $debug = $config->{debug};
-
-    my $name_space = $c->config->{form_name_space} || $c->config->{name} . '::Form';
-    my @namespace = ref $name_space eq 'ARRAY' ? @{ $name_space } : ( $name_space );
-
-
-    for my $ns ( @namespace ) {
-        warn "Searching for forms in the [$ns] namespace\n" if $debug;
-
-        for my $form ( Module::Find::findallmod( $ns ) ) {
-
-            warn "Loading form module [$form]\n" if $debug;
-
-            $form->require or die "Failed to require form module [$form]: $@";
-
-            eval { $form->load_form };
-            die "Failed load_module for form module [$form]: $@" if $@;
-        }
-    }
-
-    return;
-}
-
-
-
-=head2 CONFIGURATION
+=head1 CONFIGURATION
 
 Configuration is specified within C<< MyApp->config->{form}} >>.
 The following options are available:
@@ -431,6 +437,17 @@ to the application name with the ::Form suffix (e.g. MyApp::Form).  Note, this
 DOES NOT currently change where C<< $c->form >> looks for form modules.
 Not quite sure why that's not implemented yet.
 
+=item model_name
+
+Defines the default model class.  To play nicely with
+L<Form::Processor::Model::DBIC> will set "schema" option when
+creating a new Form if this value is set.
+
+Basically does:
+
+    $schema = $c->model( $model_name )->schema;
+
+Can be overridden by a stash element of the same name.
 
 =item debug
 
@@ -438,30 +455,22 @@ If true will write brief debugging information when running setup.
 
 =back
 
-
-
-=head1 AUTHOR
-
-Bill Moseley
-
-=head1 COPYRIGHT & LICENSE
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
 =head1 See also
 
 L<Form::Processor>
 
 L<Form::Processor::Model::CDBI>
 
+=head1 AUTHOR
+
+Bill Moseley <mods@hank.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by iParadigms, LLC..
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
 =cut
-
-return 'oh, so true';
-
-
-
-
-
-
 

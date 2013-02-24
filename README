@@ -1,35 +1,13 @@
-Catalyst-Plugin-Form-Processor version 0.02
-===========================================
-
-This is a Catalyst Plugin for Form::Processor.
-
-INSTALLATION
-
-To install this module type the following:
-
-   perl Makefile.PL
-   make
-   make test
-   make install
-
-DEPENDENCIES
-
-Run (or see) Makefile.PL
-
-DEMO APPLICATION
-
-There is an example Catalyst application in the example directory which
-can be started with:
-
-    $ example/FormProcessor/script/formprocessor_server.pl
 
 
-COPYRIGHT AND LICENCE
+This archive contains the distribution Catalyst-Plugin-Form-Processor,
+version 1.130550:
 
-Copyright (C) 2007 by Bill Moseley
+  Use Form::Processor with Catalyst
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.8 or,
-at your option, any later version of Perl 5 you may have available.
+This software is copyright (c) 2012 by iParadigms, LLC..
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 

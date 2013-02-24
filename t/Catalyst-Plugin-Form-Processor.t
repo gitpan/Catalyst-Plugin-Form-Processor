@@ -1,4 +1,8 @@
+use strict;
+use warnings;
+
 # Before `make install' is performed this script should be runnable with
+
 # `make test'. After `make install' it should work as `perl Catalyst-Plugin-Form-Processor.t'
 
 #########################
@@ -6,7 +10,7 @@
 # change 'tests => 1' to 'tests => last_test_to_print';
 
 use Test::More tests => 1;
-BEGIN { use_ok('Catalyst::Plugin::Form::Processor') };
+BEGIN { use_ok( 'Catalyst::Plugin::Form::Processor' ) }
 
 #########################
 
