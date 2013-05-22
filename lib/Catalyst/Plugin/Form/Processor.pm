@@ -1,6 +1,6 @@
 package Catalyst::Plugin::Form::Processor;
 {
-  $Catalyst::Plugin::Form::Processor::VERSION = '1.130550';
+  $Catalyst::Plugin::Form::Processor::VERSION = '1.131420';
 }
 use Moose::Role;
 use Class::MOP;
@@ -205,7 +205,7 @@ Catalyst::Plugin::Form::Processor - Use Form::Processor with Catalyst
 
 =head1 VERSION
 
-version 1.130550
+version 1.131420
 
 =head1 SYNOPSIS
 
@@ -467,7 +467,7 @@ Bill Moseley <mods@hank.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by iParadigms, LLC..
+This software is copyright (c) 2013 by Bill Moseley.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

@@ -21,4 +21,4 @@ requires:
   Module::Find: 0
   Moose::Role: 0
   Scalar::Util: 0
-version: 1.130550
+version: 1.131420
