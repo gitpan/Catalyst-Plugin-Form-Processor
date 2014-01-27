@@ -1,9 +1,7 @@
 package Catalyst::Plugin::Form::Processor;
-{
-  $Catalyst::Plugin::Form::Processor::VERSION = '1.131420';
-}
+$Catalyst::Plugin::Form::Processor::VERSION = '1.140270';
 use Moose::Role;
-use Class::MOP;
+use Class::Load 0.20;
 use HTML::FillInForm;
 use Module::Find;
 use Scalar::Util;
@@ -33,7 +31,7 @@ sub form {
         $package .= '::' . ucfirst( $c->action->name );
     }
 
-    Class::MOP::load_class( $package );
+    Class::Load::load_class( $package );
 
 
     # Single argument to Form::Processor->new means it's an item id or object.
@@ -174,10 +172,16 @@ after 'setup_finalize' => sub {
 
             warn "Loading form module [$form]\n" if $debug;
 
-            Class::MOP::load_class( $form );
+            Class::Load::load_class( $form );
 
-            eval { $form->load_form }
-                || die "Failed load_module for form module [$form]: $@" if $@;
+            # Should we pre-load the form's fields by attempting
+            # to init the form?   May fail if the profile method
+            # assumes it is running per request instead of at load time.
+
+            next unless $config->{pre_load_fields};
+
+            eval { $form->load_form; 1 }
+                || die "Failed load_module for form module [$form]: $@";
         }
     }
 
@@ -205,7 +209,7 @@ Catalyst::Plugin::Form::Processor - Use Form::Processor with Catalyst
 
 =head1 VERSION
 
-version 1.131420
+version 1.140270
 
 =head1 SYNOPSIS
 
@@ -467,7 +471,7 @@ Bill Moseley <mods@hank.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Bill Moseley.
+This software is copyright (c) 2012 by iParadigms, LLC..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

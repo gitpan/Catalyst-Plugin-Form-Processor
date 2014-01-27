@@ -1,7 +1,12 @@
 Revision history for Catalyst-Plugin-Form-Processor
 
-1.131420  2013-05-22 07:36:31 America/Los_Angeles
-    - Uploaded previous version to pause but never indexed.
+1.140270  2014-01-27 10:59:50-08:00 America/Los_Angeles
+
+1.140270  2014-01-27 10:59:08-08:00 America/Los_Angeles
+    - Moved from Class::MOP to Class::Load (RT-90968).
+    - Add config to determine if should pre-load fields when pre-loading forms.
+      There was a bug that prevented the code from failing, so adding a config
+      to keep the same behavior.
 
 
 1.130550  2013-02-24 08:50:17 America/Los_Angeles
